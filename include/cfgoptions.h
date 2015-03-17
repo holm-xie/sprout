@@ -62,6 +62,7 @@ struct options
   bool                                 pcscf_enabled;
   int                                  pcscf_untrusted_port;
   int                                  pcscf_trusted_port;
+  std::string                          pcscf_access_ip;
   int                                  webrtc_port;
   std::string                          upstream_proxy;
   int                                  upstream_proxy_port;

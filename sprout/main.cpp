@@ -198,8 +198,8 @@ static void usage(void)
 {
   puts("Options:\n"
        "\n"
-       " -p, --pcscf <untrusted port>,<trusted port>\n"
-       "                            Enable P-CSCF function with the specified ports\n"
+       " -p, --pcscf <access-side port>,<trusted port>,<access-side IP>\n"
+       "                            Enable P-CSCF function with the specified ports.\n"
        " -i, --icscf <port>         Enable I-CSCF function on the specified port\n"
        " -s, --scscf <port>         Enable S-CSCF function on the specified port\n"
        " -w, --webrtc-port N        Set local WebRTC listener port to N\n"
@@ -391,17 +391,21 @@ static pj_status_t init_options(int argc, char* argv[], struct options* options)
       {
         std::vector<std::string> pcscf_options;
         Utils::split_string(std::string(pj_optarg), ',', pcscf_options, 0, false);
-        if (pcscf_options.size() == 2)
+        if (pcscf_options.size() == 3)
         {
           options->pcscf_untrusted_port = parse_port(pcscf_options[0]);
           options->pcscf_trusted_port = parse_port(pcscf_options[1]);
+          options->pcscf_access_ip = pcscf_options[2];
         }
 
         if ((options->pcscf_untrusted_port != 0) &&
             (options->pcscf_trusted_port != 0))
         {
-          LOG_INFO("P-CSCF enabled on ports %d (untrusted) and %d (trusted)",
+          LOG_INFO("P-CSCF enabled on ports %d (access) and %d (trusted)",
                    options->pcscf_untrusted_port, options->pcscf_trusted_port);
+          LOG_INFO("P-CSCF access IP is %s",
+                   options->pcscf_access_ip.c_str());
+
           options->pcscf_enabled = true;
         }
         else
@@ -1423,6 +1427,7 @@ int main(int argc, char* argv[])
                       opt.sas_server,
                       opt.pcscf_trusted_port,
                       opt.pcscf_untrusted_port,
+                      opt.pcscf_access_ip,
                       opt.scscf_port,
                       opt.icscf_port,
                       opt.local_host,

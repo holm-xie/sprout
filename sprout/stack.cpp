@@ -197,7 +197,8 @@ void init_pjsip_logging(int log_level,
 
 pj_status_t fill_transport_details(int port,
                                    pj_sockaddr *addr,
-                                   pj_str_t& host,
+                                   pj_str_t& bind_host,
+                                   pj_str_t& publish_host,
                                    pjsip_host_port *published_name)
 {
   pj_status_t status;
@@ -211,7 +212,7 @@ pj_status_t fill_transport_details(int port,
   // single address or hostname.
   // Bono/Sprout needs to bind to the local host, but use the host passed into this
   // function in the route header (which can be the local or public host)
-  status = pj_getaddrinfo(af, &stack_data.local_host, &count, addr_info);
+  status = pj_getaddrinfo(af, &bind_host, &count, addr_info);
   if (status != PJ_SUCCESS)
   {
     LOG_ERROR("Failed to decode IP address %.*s (%s)",
@@ -237,20 +238,22 @@ pj_status_t fill_transport_details(int port,
     status = PJ_EAFNOTSUP;
   }
 
-  published_name->host = host;
+  published_name->host = publish_host;
   published_name->port = port;
 
   return status;
 }
 
 
-pj_status_t create_udp_transport(int port, pj_str_t& host)
+pj_status_t create_udp_transport(int port,
+                                 pj_str_t& publish_host,
+                                 pj_str_t& bind_host)
 {
   pj_status_t status;
   pj_sockaddr addr;
   pjsip_host_port published_name;
 
-  status = fill_transport_details(port, &addr, host, &published_name);
+  status = fill_transport_details(port, &addr, bind_host, publish_host, &published_name);
   if (status != PJ_SUCCESS)
   {
     return status;
@@ -289,14 +292,14 @@ pj_status_t create_udp_transport(int port, pj_str_t& host)
 }
 
 
-pj_status_t create_tcp_listener_transport(int port, pj_str_t& host, pjsip_tpfactory **tcp_factory)
+pj_status_t create_tcp_listener_transport(int port, pj_str_t& bind_host, pj_str_t& publish_host, pjsip_tpfactory **tcp_factory)
 {
   pj_status_t status;
   pj_sockaddr addr;
   pjsip_host_port published_name;
   pjsip_tcp_transport_cfg cfg;
 
-  status = fill_transport_details(port, &addr, host, &published_name);
+  status = fill_transport_details(port, &addr, bind_host, publish_host, &published_name);
   if (status != PJ_SUCCESS)
   {
     return status;
@@ -352,17 +355,17 @@ void destroy_tcp_listener_transport(int port, pjsip_tpfactory *tcp_factory)
 }
 
 
-pj_status_t start_transports(int port, pj_str_t& host, pjsip_tpfactory** tcp_factory)
+pj_status_t start_transports(int port, pj_str_t& bind_host, pj_str_t& publish_host, pjsip_tpfactory** tcp_factory)
 {
   pj_status_t status;
 
-  status = create_udp_transport(port, host);
+  status = create_udp_transport(port, bind_host, publish_host);
 
   if (status != PJ_SUCCESS) {
     return status;
   }
 
-  status = create_tcp_listener_transport(port, host, tcp_factory);
+  status = create_tcp_listener_transport(port, bind_host, publish_host, tcp_factory);
 
   if (status != PJ_SUCCESS) {
     return status;
@@ -427,17 +430,20 @@ public:
     {
       create_tcp_listener_transport(stack_data.pcscf_trusted_port,
                                     stack_data.local_host,
+                                    stack_data.local_host,
                                     &stack_data.pcscf_trusted_tcp_factory);
     }
     if (stack_data.scscf_port != 0)
     {
       create_tcp_listener_transport(stack_data.scscf_port,
                                     stack_data.local_host,
+                                    stack_data.local_host,
                                     &stack_data.scscf_tcp_factory);
     }
     if (stack_data.icscf_port != 0)
     {
       create_tcp_listener_transport(stack_data.icscf_port,
+                                    stack_data.local_host,
                                     stack_data.local_host,
                                     &stack_data.icscf_tcp_factory);
     }
@@ -449,6 +455,7 @@ public:
     if (stack_data.pcscf_untrusted_port != 0)
     {
       create_tcp_listener_transport(stack_data.pcscf_untrusted_port,
+                                    stack_data.pcscf_access_ip,
                                     stack_data.public_host,
                                     &stack_data.pcscf_untrusted_tcp_factory);
     }
@@ -539,6 +546,7 @@ pj_status_t init_stack(const std::string& system_name,
                        const std::string& sas_address,
                        int pcscf_trusted_port,
                        int pcscf_untrusted_port,
+                       const std::string& pcscf_access_ip,
                        int scscf_port,
                        int icscf_port,
                        const std::string& local_host,
@@ -570,6 +578,7 @@ pj_status_t init_stack(const std::string& system_name,
   char* local_host_cstr = strdup(local_host.c_str());
   char* public_host_cstr = strdup(public_host.c_str());
   char* home_domain_cstr = strdup(home_domain.c_str());
+  char* pcscf_access_ip_cstr = strdup(pcscf_access_ip.c_str());
   char* scscf_uri_cstr;
   if (scscf_uri.empty())
   {
@@ -600,6 +609,8 @@ pj_status_t init_stack(const std::string& system_name,
   // Work out local and public hostnames and cluster domain names.
   stack_data.local_host = (local_host != "") ? pj_str(local_host_cstr) : *pj_gethostname();
   stack_data.public_host = (public_host != "") ? pj_str(public_host_cstr) : stack_data.local_host;
+  stack_data.pcscf_access_ip = (pcscf_access_ip != "") ? pj_str(pcscf_access_ip_cstr) : stack_data.local_host;
+  LOG_INFO("stack_data.pcscf_access_ip is %.*s", stack_data.pcscf_access_ip.slen, stack_data.pcscf_access_ip.ptr);
   stack_data.default_home_domain = (home_domain != "") ? pj_str(home_domain_cstr) : stack_data.local_host;
   stack_data.scscf_uri = pj_str(scscf_uri_cstr);
   stack_data.cdf_domain = pj_str(cdf_domain_cstr);
@@ -684,6 +695,7 @@ pj_status_t init_stack(const std::string& system_name,
   {
     status = start_transports(stack_data.pcscf_trusted_port,
                               stack_data.local_host,
+                              stack_data.local_host,
                               &stack_data.pcscf_trusted_tcp_factory);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, status);
   }
@@ -692,6 +704,7 @@ pj_status_t init_stack(const std::string& system_name,
   if (stack_data.pcscf_untrusted_port != 0)
   {
     status = start_transports(stack_data.pcscf_untrusted_port,
+                              stack_data.pcscf_access_ip,
                               stack_data.public_host,
                               &stack_data.pcscf_untrusted_tcp_factory);
     PJ_ASSERT_RETURN(status == PJ_SUCCESS, status);
@@ -701,6 +714,7 @@ pj_status_t init_stack(const std::string& system_name,
   if (stack_data.scscf_port != 0)
   {
     status = start_transports(stack_data.scscf_port,
+                              stack_data.local_host,
                               stack_data.public_host,
                               &stack_data.scscf_tcp_factory);
     if (status == PJ_SUCCESS)
@@ -718,6 +732,7 @@ pj_status_t init_stack(const std::string& system_name,
   if (stack_data.icscf_port != 0)
   {
     status = start_transports(stack_data.icscf_port,
+                              stack_data.local_host,
                               stack_data.public_host,
                               &stack_data.icscf_tcp_factory);
     if (status == PJ_SUCCESS)

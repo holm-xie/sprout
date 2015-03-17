@@ -78,6 +78,7 @@ struct stack_data_struct
   int                  sas_logging_module_id;
 
   pj_str_t             local_host;
+  pj_str_t             pcscf_access_ip;
   pj_str_t             public_host;
   pj_str_t             default_home_domain;
   std::unordered_set<std::string> home_domains;
@@ -141,6 +142,7 @@ extern pj_status_t init_stack(const std::string& sas_system_name,
                               const std::string& sas_address,
                               int pcscf_trusted_port,
                               int pcscf_untrusted_port,
+                              const std::string& pcscf_access_ip,
                               int scscf_port,
                               int icscf_port,
                               const std::string& local_host,
