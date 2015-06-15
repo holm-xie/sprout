@@ -787,28 +787,39 @@ void SproutletProxy::UASTsx::schedule_requests()
       }
       else
       {
-        // No local Sproutlet, proxy the request.
         LOG_DEBUG("No local sproutlet matches request");
-        size_t index;
-
-        pj_status_t status = allocate_uac(req.req, index);
-
-        if (status == PJ_SUCCESS)
+        pjsip_uri* next_hop = PJUtils::next_hop(req.req->msg);
+        if (next_hop == req.req->msg->line.req.uri &&
+            (PJUtils::is_uri_local(next_hop) ||
+             PJUtils::is_home_domain(next_hop)))
         {
-          // Successfully set up UAC transaction, so set up the mappings and
-          // send the request.
-          if (req.req->msg->line.req.method.id != PJSIP_ACK_METHOD)
-          {
-            _dmap_uac[req.upstream] = _uac_tsx[index];
-            _umap[(void*)_uac_tsx[index]] = req.upstream;
-          }
-
-          // Send the request.
-          _uac_tsx[index]->send_request();
+          LOG_WARNING("No local sproutlet accepted request, and the next route is local"
+                      " - dropping message to avoid loops");
         }
         else
         {
-          // @TODO
+          // Proxy the request.
+          size_t index;
+
+          pj_status_t status = allocate_uac(req.req, index);
+
+          if (status == PJ_SUCCESS)
+          {
+            // Successfully set up UAC transaction, so set up the mappings and
+            // send the request.
+            if (req.req->msg->line.req.method.id != PJSIP_ACK_METHOD)
+            {
+              _dmap_uac[req.upstream] = _uac_tsx[index];
+              _umap[(void*)_uac_tsx[index]] = req.upstream;
+            }
+
+            // Send the request.
+            _uac_tsx[index]->send_request();
+          }
+          else
+          {
+            // @TODO
+          }
         }
       }
     }
