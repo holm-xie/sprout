@@ -117,15 +117,9 @@ SproutletTsx* ICSCFSproutlet::get_tsx(SproutletTsxHelper* helper,
   {
     return (SproutletTsx*)new ICSCFSproutletRegTsx(helper, this);
   }
-  else if (req->line.req.method.id != PJSIP_ACK_METHOD)
-  {
-    return (SproutletTsx*)new ICSCFSproutletTsx(helper, this);
-  }
   else
   {
-    // ACKs are never "initial requests" (as used by TS 24.229), so never perform
-    // I-CSCF processing - just forward them as-is, or fail them.
-    return NULL;
+    return (SproutletTsx*)new ICSCFSproutletTsx(helper, this);
   }
 }
 
@@ -469,6 +463,7 @@ void ICSCFSproutletTsx::on_rx_initial_request(pjsip_msg* req)
 
   LOG_DEBUG("I-CSCF initialize transaction for non-REGISTER request");
 
+
   // Before we clone the request for retries, remove the P-Profile-Key header
   // if present.
   PJUtils::remove_hdr(req, &STR_P_PROFILE_KEY);
@@ -476,6 +471,15 @@ void ICSCFSproutletTsx::on_rx_initial_request(pjsip_msg* req)
   // Determine orig/term and the served user's name.
   const pjsip_route_hdr* route = route_hdr();
   std::string impu;
+
+  if (req->line.req.method.id != PJSIP_ACK_METHOD)
+  {
+    // ACKs are never "initial requests" (as used by TS 24.229), so never perform
+    // I-CSCF processing - just drop them.
+    LOG_WARNING("Dropping ACK received at the I-CSCF");
+    free_msg(req);
+    return;
+  }
 
   if ((route != NULL) &&
       (pjsip_param_find(&((pjsip_sip_uri*)route->name_addr.uri)->other_param,
