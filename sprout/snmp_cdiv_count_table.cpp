@@ -1,8 +1,8 @@
 /**
- * @file basetest.cpp Base class for UTs.
+ * @file snmp_accumulator_table.cpp
  *
  * Project Clearwater - IMS in the Cloud
- * Copyright (C) 2013  Metaswitch Networks Ltd
+ * Copyright (C) 2015 Metaswitch Networks Ltd
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -34,26 +34,33 @@
  * as those licenses appear in the file LICENSE-OPENSSL.
  */
 
-///
-///----------------------------------------------------------------------------
+#include "snmp_cdiv_count_table.h"
 
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "stack.h"
-#include "snmp_includes.h"
-
-#include "basetest.hpp"
-#include "test_interposer.hpp"
-
-using namespace std;
-
-BaseTest::BaseTest()
+namespace SNMP
 {
+
+void CDivCount::reset()
+{
+  total.store(0);
+  unconditional.store(0);
+  busy.store(0);
+  not_registered.store(0);
+  no_answer.store(0);
+  not_reachable.store(0);
 }
 
-BaseTest::~BaseTest()
+ColumnData CDivCountRow::get_columns()
 {
-  cwtest_reset_time();
-};
+  CDivCount* count = _view->get_data();
 
+  // Construct and return a ColumnData with the appropriate values
+  ColumnData ret;
+  ret[1] = Value::integer(_index);
+  ret[2] = Value::uint(count->total.load());
+  ret[3] = Value::uint(count->unconditional.load());
+  ret[4] = Value::uint(count->busy.load());
+  ret[5] = Value::uint(count->not_registered.load());
+  ret[6] = Value::uint(count->no_answer.load());
+  ret[7] = Value::uint(count->not_reachable.load());
+  return ret;
+}

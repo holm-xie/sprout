@@ -55,9 +55,6 @@ extern "C" {
 #include "load_monitor.h"
 #include "sipresolver.h"
 
-/* Pre-declariations */
-class LastValueCache;
-
 /* Options */
 struct stack_data_struct
 {
@@ -89,8 +86,7 @@ struct stack_data_struct
 
   unsigned             name_cnt;
   pj_str_t             name[16];
-  LastValueCache *     stats_aggregator;
-
+  
   bool record_route_on_every_hop;
   bool record_route_on_initiation_of_originating;
   bool record_route_on_initiation_of_terminating;

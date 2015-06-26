@@ -43,19 +43,15 @@ TARGET_SOURCES := logger.cpp \
                   dnsresolver.cpp \
                   log.cpp \
                   pjutils.cpp \
-                  statistic.cpp \
-                  zmq_lvc.cpp \
                   trustboundary.cpp \
                   sessioncase.cpp \
                   ifchandler.cpp \
                   aschain.cpp \
                   custom_headers.cpp \
-                  accumulator.cpp \
                   connection_tracker.cpp \
                   quiescing_manager.cpp \
                   dialog_tracker.cpp \
                   load_monitor.cpp \
-                  counter.cpp \
                   basicproxy.cpp \
                   acr.cpp \
                   signalhandler.cpp \

@@ -45,19 +45,15 @@ TARGET_SOURCES := logger.cpp \
                   bgcfservice.cpp \
                   log.cpp \
                   pjutils.cpp \
-                  statistic.cpp \
-                  zmq_lvc.cpp \
                   trustboundary.cpp \
                   sessioncase.cpp \
                   ifchandler.cpp \
                   aschain.cpp \
                   custom_headers.cpp \
-                  accumulator.cpp \
                   connection_tracker.cpp \
                   quiescing_manager.cpp \
                   dialog_tracker.cpp \
                   load_monitor.cpp \
-                  counter.cpp \
                   basicproxy.cpp \
                   icscfrouter.cpp \
                   scscfselector.cpp \
@@ -155,8 +151,7 @@ TARGET_SOURCES_TEST := test_main.cpp \
 TARGET_EXTRA_OBJS_TEST := gmock-all.o \
                           gtest-all.o \
                           md5.o \
-                          test_interposer.so \
-                          fakezmq.so
+                          test_interposer.so
 
 TEST_XML = $(TEST_OUT_DIR)/test_detail_$(TARGET_TEST).xml
 COVERAGE_XML = $(TEST_OUT_DIR)/coverage_$(TARGET_TEST).xml
@@ -377,7 +372,3 @@ $(OBJ_DIR_TEST)/md5.o : $(SIPP_DIR)/md5.c
 # Build rule for our interposer.
 $(OBJ_DIR_TEST)/test_interposer.so: ${ROOT}/modules/cpp-common/test_utils/test_interposer.cpp ${ROOT}/modules/cpp-common/test_utils/test_interposer.hpp
 	$(CXX) $(CPPFLAGS) -shared -fPIC -ldl $< -o $@
-
-# Build rule for our fake zmq.
-$(OBJ_DIR_TEST)/fakezmq.so: ${ROOT}/modules/cpp-common/test_utils/fakezmq.cpp ${ROOT}/modules/cpp-common/test_utils/fakezmq.h
-	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include -I$(GMOCK_DIR) -I$(GMOCK_DIR)/include -shared -fPIC -ldl $< -o $@

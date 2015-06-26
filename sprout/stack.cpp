@@ -66,14 +66,10 @@ extern "C" {
 #include "sproutsasevent.h"
 #include "stack.h"
 #include "utils.h"
-#include "zmq_lvc.h"
-#include "statistic.h"
 #include "custom_headers.h"
 #include "utils.h"
-#include "accumulator.h"
 #include "connection_tracker.h"
 #include "quiescing_manager.h"
-#include "counter.h"
 #include "sprout_pd_definitions.h"
 
 class StackQuiesceHandler;
@@ -830,10 +826,6 @@ pj_status_t init_stack(const std::string& system_name,
     process_name = "sprout";
   }
 
-  stack_data.stats_aggregator = new LastValueCache(num_known_stats,
-                                                   known_statnames,
-                                                   process_name);
-
   if (quiescing_mgr_arg != NULL)
   {
     quiescing_mgr = quiescing_mgr_arg;
@@ -894,8 +886,6 @@ void stop_stack()
 void destroy_stack(void)
 {
   // Tear down the stack.
-  delete stack_data.stats_aggregator;
-
   delete stack_quiesce_handler;
   stack_quiesce_handler = NULL;
 

@@ -46,8 +46,6 @@
 #include "test_interposer.hpp"
 #include "sproutletproxy.h"
 #include "common_sip_processing.h"
-#include "counter.h"
-#include "snmp_accumulator_table.h"
 #include "snmp_accumulator_table.h"
 
 using namespace std;

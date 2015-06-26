@@ -54,7 +54,7 @@ extern "C" {
 #include "xdmconnection.h"
 #include "simservs.h"
 #include "aschain.h"
-#include "counter.h"
+#include "snmp_cdiv_count_table.h"
 
 class CDivCallback
 {
@@ -93,12 +93,7 @@ public:
                              unsigned int conditions);
 
 private:
-  StatisticCounter _cdiv_total_stat;
-  StatisticCounter _cdiv_unconditional_stat;
-  StatisticCounter _cdiv_busy_stat;
-  StatisticCounter _cdiv_not_registered_stat;
-  StatisticCounter _cdiv_no_answer_stat;
-  StatisticCounter _cdiv_not_reachable_stat;
+  SNMP::CDivCountTable* _cdiv_table;
 };
 
 class MmtelTsx : public AppServerTsx

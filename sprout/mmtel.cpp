@@ -58,6 +58,8 @@ using namespace rapidxml;
 #define PRIVACY_H_CRITICAL 0x00000020
 
 
+static oid CDIV_COUNTS_OID[] = { 1, 2, 826, 0, 1, 1578918, 9, 7, 1 };
+
 /// Get a new MmtelTsx from the Mmtel AS.
 AppServerTsx* Mmtel::get_app_tsx(AppServerTsxHelper* helper,
                                  pjsip_msg* req)
@@ -117,39 +119,39 @@ simservs* Mmtel::get_user_services(std::string public_id, SAS::TrailId trail)
 /// Constructor.
 CallDiversionAS::CallDiversionAS(const std::string& service_name) :
   AppServer(service_name),
-  _cdiv_total_stat("cdiv_total", stack_data.stats_aggregator),
-  _cdiv_unconditional_stat("cdiv_unconditional", stack_data.stats_aggregator),
-  _cdiv_busy_stat("cdiv_busy", stack_data.stats_aggregator),
-  _cdiv_not_registered_stat("cdiv_not_registered", stack_data.stats_aggregator),
-  _cdiv_no_answer_stat("cdiv_no_answer", stack_data.stats_aggregator),
-  _cdiv_not_reachable_stat("cdiv_not_reachable", stack_data.stats_aggregator) {};
+  _cdiv_table(new SNMP::CDivCountTable("cdiv_counts",
+                                       CDIV_COUNTS_OID,
+                                       OID_LENGTH(CDIV_COUNTS_OID))) {};
 
 /// Destructor.
-CallDiversionAS::~CallDiversionAS() {}
+CallDiversionAS::~CallDiversionAS()
+{
+  delete _cdiv_table;
+}
 
 /// Called on diversion.  Increments statistics.
 void CallDiversionAS::cdiv_callback(std::string target, unsigned int conditions)
 {
-  _cdiv_total_stat.increment();
+  _cdiv_table->increment_total();
   if (conditions == 0)
   {
-    _cdiv_unconditional_stat.increment();
+    _cdiv_table->increment_unconditional();
   }
   if (conditions & simservs::Rule::CONDITION_BUSY)
   {
-    _cdiv_busy_stat.increment();
+    _cdiv_table->increment_busy();
   }
   if (conditions & simservs::Rule::CONDITION_NOT_REGISTERED)
   {
-    _cdiv_not_registered_stat.increment();
+    _cdiv_table->increment_not_registered();
   }
   if (conditions & simservs::Rule::CONDITION_NO_ANSWER)
   {
-    _cdiv_no_answer_stat.increment();
+    _cdiv_table->increment_no_answer();
   }
   if (conditions & simservs::Rule::CONDITION_NOT_REACHABLE)
   {
-    _cdiv_not_reachable_stat.increment();
+    _cdiv_table->increment_not_reachable();
   }
 }
 
