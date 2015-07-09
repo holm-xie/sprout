@@ -252,7 +252,7 @@ private:
   std::list<pjsip_tx_data*> _out;
 
   // The DNS resolver.
-  static DnsCachedResolver _dnsresolver;
+  static DnsCachedResolver* _dnsresolver;
 
 };
 

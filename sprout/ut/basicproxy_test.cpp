@@ -3526,7 +3526,7 @@ TEST_F(BasicProxyTest, BlacklistOnTimeout)
                                          100,
                                          5060,
                                          "proxy-y.awaydomain"));
-  _dnsresolver.add_to_cache("_sip._tcp.proxy.awaydomain", ns_t_srv, srv_records);
+  _dnsresolver->add_to_cache("_sip._tcp.proxy.awaydomain", ns_t_srv, srv_records);
 
   add_host_mapping("proxy-x.awaydomain", "10.10.10.100");
   add_host_mapping("proxy-y.awaydomain", "10.10.10.101");
@@ -3643,7 +3643,7 @@ TEST_F(BasicProxyTest, StatelessProxyNoBlacklistOnTimeout)
                                          100,
                                          5060,
                                          "stateless-proxy-y.awaydomain"));
-  _dnsresolver.add_to_cache("_sip._tcp.stateless-proxy.awaydomain", ns_t_srv, srv_records);
+  _dnsresolver->add_to_cache("_sip._tcp.stateless-proxy.awaydomain", ns_t_srv, srv_records);
 
   add_host_mapping("stateless-proxy-x.awaydomain", "10.10.10.100");
   add_host_mapping("stateless-proxy-y.awaydomain", "10.10.10.101");

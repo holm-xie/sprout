@@ -1567,7 +1567,7 @@ int main(int argc, char* argv[])
                                            health_checker);
 
   // Create a DNS resolver and a SIP specific resolver.
-  dns_resolver = new DnsCachedResolver(opt.dns_servers);
+  dns_resolver = DnsCachedResolver::from_server_ips(opt.dns_servers);
   sip_resolver = new SIPResolver(dns_resolver, opt.sip_blacklist_duration);
 
   // Create a new quiescing manager instance and register our completion handler

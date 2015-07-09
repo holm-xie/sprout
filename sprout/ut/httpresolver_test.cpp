@@ -49,19 +49,20 @@ using namespace std;
 /// Fixture for SIPResolverTest.
 class HTTPResolverTest : public ::testing::Test
 {
-  DnsCachedResolver _dnsresolver;
+  DnsCachedResolver* _dnsresolver;
   HttpResolver _httpresolver;
 
   // DNS Resolver is created with server address 0.0.0.0 to disable server
   // queries.
   HTTPResolverTest() :
-    _dnsresolver("0.0.0.0"),
-    _httpresolver(&_dnsresolver, AF_INET)
+    _dnsresolver(DnsCachedResolver::from_server_ip("0.0.0.0")),
+    _httpresolver(_dnsresolver, AF_INET)
   {
   }
 
   virtual ~HTTPResolverTest()
   {
+    delete _dnsresolver;
   }
 
   DnsRRecord* a(const std::string& name,
@@ -193,7 +194,7 @@ TEST_F(HTTPResolverTest, DNSResolution)
   // Test selection of TCP transport and port using NAPTR and SRV records.
   std::vector<DnsRRecord*> records;
   records.push_back(a("sprout.cw-ngv.com", 3600, "1.2.3.4"));
-  _dnsresolver.add_to_cache("sprout.cw-ngv.com", ns_t_a, records);
+  _dnsresolver->add_to_cache("sprout.cw-ngv.com", ns_t_a, records);
 
   EXPECT_EQ("1.2.3.4:7888",
             HttpRT(_httpresolver, "sprout.cw-ngv.com").resolve(7888));

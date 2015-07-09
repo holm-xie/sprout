@@ -127,7 +127,8 @@ void SipTest::SetUpTestCase(bool clear_host_mapping)
   stack_data.record_route_on_completion_of_terminating = true;
   stack_data.default_session_expires = 60 * 10;
   stack_data.max_session_expires = 90 * 10;
-  stack_data.sipresolver = new SIPResolver(&_dnsresolver);
+  _dnsresolver = DnsCachedResolver::from_server_ip("0.0.0.0");
+  stack_data.sipresolver = new SIPResolver(_dnsresolver);
   stack_data.addr_family = AF_INET;
 
   // Sort out logging.
@@ -165,6 +166,8 @@ void SipTest::TearDownTestCase()
   delete stack_data.stats_aggregator;
   stack_data.stats_aggregator = NULL;
 
+  delete _dnsresolver;
+
   // Delete the default TCP transport flow.
   delete _tp_default;
 
@@ -181,7 +184,7 @@ void SipTest::TearDownTestCase()
 }
 
 
-DnsCachedResolver SipTest::_dnsresolver("0.0.0.0");
+DnsCachedResolver* SipTest::_dnsresolver;
 std::map<int, pjsip_transport*> SipTest::TransportFlow::_udp_transports;
 std::map<int, pjsip_tpfactory*> SipTest::TransportFlow::_tcp_factories;
 
@@ -354,7 +357,7 @@ void SipTest::add_host_mapping(const string& hostname, const string& addresses)
     records.push_back((DnsRRecord*)new DnsARecord(hostname, 36000000, addr));
     address_list.pop_front();
   }
-  _dnsresolver.add_to_cache(hostname, ns_t_a, records);
+  _dnsresolver->add_to_cache(hostname, ns_t_a, records);
 }
 
 void SipTest::inject_msg(const string& msg, TransportFlow* tp)
