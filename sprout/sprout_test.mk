@@ -90,7 +90,8 @@ TARGET_SOURCES := logger.cpp \
                   exception_handler.cpp \
                   snmp_scalar.cpp \
                   snmp_row.cpp \
-                  sip_string_to_request_type.cpp
+                  sip_string_to_request_type.cpp \
+                  namespace_hop.cpp
 
 TARGET_SOURCES_TEST := test_main.cpp \
                        fakecurl.cpp \

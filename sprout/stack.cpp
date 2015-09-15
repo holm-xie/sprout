@@ -74,6 +74,7 @@ extern "C" {
 #include "connection_tracker.h"
 #include "quiescing_manager.h"
 #include "counter.h"
+#include "namespace_hop.h"
 #include "sprout_pd_definitions.h"
 
 class StackQuiesceHandler;
@@ -680,7 +681,8 @@ pj_status_t init_stack(const std::string& system_name,
             system_type_sas,
             SASEvent::CURRENT_RESOURCE_BUNDLE,
             sas_address,
-            sas_write);
+            sas_write,
+            &create_connection_in_management_namespace);
 
   // Initialise PJSIP and all the associated resources.
   status = init_pjsip();
