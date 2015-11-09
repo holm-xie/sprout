@@ -1496,8 +1496,7 @@ int main(int argc, char* argv[])
     TRC_WARNING("XDM server configured on P-CSCF, ignoring");
   }
 
-  if ((opt.store_servers != "") &&
-      (opt.auth_enabled) &&
+  if ((opt.auth_enabled) &&
       (opt.worker_threads == 1))
   {
     TRC_WARNING("Use multiple threads for good performance when using memstore and/or authentication");
@@ -1813,8 +1812,6 @@ int main(int argc, char* argv[])
 
     // Launch stateful proxy as P-CSCF.
     status = init_stateful_proxy(NULL,
-                                 NULL,
-                                 NULL,
                                  true,
                                  opt.upstream_proxy,
                                  opt.upstream_proxy_port,
@@ -1863,19 +1860,10 @@ int main(int argc, char* argv[])
                       (ACRFactory*)new RalfACRFactory(ralf_processor, SCSCF) :
                       new ACRFactory();
 
-    if (opt.store_servers != "")
-    {
-      // Use memcached store.
-      TRC_STATUS("Using memcached compatible store");
+    // Use memcached store.
+    TRC_STATUS("Using memcached compatible store");
 
-      local_data_store = (Store*)new MemcachedStore(memcached_comm_monitor);
-    }
-    else
-    {
-      // Use local store.
-      TRC_STATUS("Using local store");
-      local_data_store = (Store*)new LocalStore();
-    }
+    local_data_store = (Store*)new MemcachedStore(memcached_comm_monitor);
 
     if (local_data_store == NULL)
     {
