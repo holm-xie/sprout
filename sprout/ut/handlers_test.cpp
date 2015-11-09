@@ -155,7 +155,7 @@ class RegSubTimeoutTasksTest : public SipTest
   }
 };
 
-// Test main flow, without a remote store.
+// Test main flow.
 TEST_F(RegSubTimeoutTasksTest, MainlineTest)
 {
   // Build request
@@ -217,50 +217,54 @@ TEST_F(RegSubTimeoutTasksTest, MissingAorJSONTest)
   EXPECT_TRUE(log.contains("Badly formed opaque data (missing aor_id)"));
 }
 
-// Test with a remote AoR with no bindings
-TEST_F(RegSubTimeoutTasksTest, RemoteAoRNoBindingsTest)
+// Test with no bindings
+TEST_F(RegSubTimeoutTasksTest, NoBindingsTest)
 {
   std::string body = "{\"aor_id\": \"sip:6505550231@homedomain\", \"subscription_id\": \"subscription_id\", \"binding_id\": \"binding_id\"}";
-  build_timeout_request(body, htp_method_POST);
 
+  build_timeout_request(body, htp_method_POST);
   // Set up regstore expectations
   std::string aor_id = "sip:6505550231@homedomain";
-  RegStore::AoR* aor = build_aor(aor_id);
-
-
-  {
-    InSequence s;
-      EXPECT_CALL(*stack, send_reply(_, 200, _));
-      EXPECT_CALL(*store, get_aor_data(aor_id, _, true)).WillOnce(Return(aor));
-      EXPECT_CALL(*store, set_aor_data(aor_id, aor, true, _, false, _)).WillOnce(Return(Store::OK));
-  }
-
-  handler->run();
-}
-
-// Test with a remote store, and a local AoR with no bindings
-TEST_F(RegSubTimeoutTasksTest, LocalAoRNoBindingsTest)
-{
-  std::string body = "{\"aor_id\": \"sip:6505550231@homedomain\", \"subscription_id\": \"subscription_id\"}";
-  build_timeout_request(body, htp_method_POST);
-
-  // Set up regstore expectations
-  std::string aor_id = "sip:6505550231@homedomain";
-  // Set up local AoR with no bindings
+  // Set up AoRs with no bindings
   RegStore::AoR* aor = new RegStore::AoR(aor_id);
 
   {
     InSequence s;
       EXPECT_CALL(*stack, send_reply(_, 200, _));
       EXPECT_CALL(*store, get_aor_data(aor_id, _, true)).WillOnce(Return(aor));
-      EXPECT_CALL(*store, set_aor_data(aor_id, aor, true, _, false, _)).WillOnce(Return(Store::OK));
+      EXPECT_CALL(*store, set_aor_data(aor_id, aor, true, _, false, _))
+                  .WillOnce(DoAll(SetArgReferee<5>(true), Return(Store::OK)));
+      EXPECT_CALL(*mock_hss, update_registration_state(aor_id, "", HSSConnection::DEREG_TIMEOUT, 0));
   }
 
   handler->run();
 }
 
-// Test with a remote store, and both AoRs with no bindings
-TEST_F(RegSubTimeoutTasksTest, NoBindingsTest)
+// Test with no bindings, and a HTTP body not containing a subscription ID
+TEST_F(RegSubTimeoutTasksTest, NoBindingsNoSubIDTest)
+{
+  std::string body = "{\"aor_id\": \"sip:6505550231@homedomain\", \"subscription_id\": \"subscription_id\"}";
+
+  build_timeout_request(body, htp_method_POST);
+  // Set up regstore expectations
+  std::string aor_id = "sip:6505550231@homedomain";
+  // Set up AoRs with no bindings
+  RegStore::AoR* aor = new RegStore::AoR(aor_id);
+
+  {
+    InSequence s;
+      EXPECT_CALL(*stack, send_reply(_, 200, _));
+      EXPECT_CALL(*store, get_aor_data(aor_id, _, true)).WillOnce(Return(aor));
+      EXPECT_CALL(*store, set_aor_data(aor_id, aor, true, _, false, _))
+                  .WillOnce(DoAll(SetArgReferee<5>(true), Return(Store::OK)));
+      EXPECT_CALL(*mock_hss, update_registration_state(aor_id, "", HSSConnection::DEREG_TIMEOUT, 0));
+  }
+
+  handler->run();
+}
+
+// Test with no bindings, and a HTTP body not containing a subscription ID or binding ID
+TEST_F(RegSubTimeoutTasksTest, NoBindingsNoSubIDNoBindingIDTest)
 {
   std::string body = "{\"aor_id\": \"sip:6505550231@homedomain\"}";
 
@@ -281,6 +285,8 @@ TEST_F(RegSubTimeoutTasksTest, NoBindingsTest)
 
   handler->run();
 }
+
+
 
 // Test with NULL AoRs
 TEST_F(RegSubTimeoutTasksTest, NullAoRTest)
