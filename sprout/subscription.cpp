@@ -59,7 +59,6 @@ extern "C" {
 #include "uri_classifier.h"
 
 static RegStore* store;
-static RegStore* remote_store;
 
 // Connection to the HSS service for retrieving associated public URIs.
 static HSSConnection* hss;
