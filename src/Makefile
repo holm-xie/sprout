@@ -143,7 +143,6 @@ sprout_test_SOURCES := ${SPROUT_COMMON_SOURCES} \
                        chronosconnection_test.cpp \
                        handlers_test.cpp \
                        httpresolver_test.cpp \
-                       mock_sas.cpp \
                        contact_filtering_test.cpp \
                        appserver_test.cpp \
                        scscf_test.cpp \

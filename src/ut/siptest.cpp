@@ -58,6 +58,8 @@ extern "C" {
 #include "pjutils.h"
 #include "test_interposer.hpp"
 #include "siptest.hpp"
+#include "sas.h"
+#include "saslogger.h"
 
 using namespace std;
 
@@ -85,6 +87,16 @@ SipTest::SipTest(pjsip_module* module) :
   EXPECT_TRUE(_current_instance == NULL) << "Can't run two SipTests in parallel";
   _current_instance = this;
   _module = module;
+
+  int rc = SAS::init("SproutUnitTest",
+            "Sprout",
+            SASEvent::CURRENT_RESOURCE_BUNDLE,
+            "sas.cw-ngv.com",
+            sas_write);
+
+  assert(rc == SAS_INIT_RC_OK);
+
+
 }
 
 /// Runs after each test.
@@ -92,6 +104,8 @@ SipTest::~SipTest()
 {
   _current_instance = NULL;
   for_each(_out.begin(), _out.end(), pjsip_tx_data_dec_ref);
+  sleep(10);
+  SAS::term();
 }
 
 
@@ -364,7 +378,7 @@ void SipTest::inject_msg(const string& msg, TransportFlow* tp)
                                                   PJSIP_POOL_RDATA_LEN,
                                                   PJSIP_POOL_RDATA_INC);
   pjsip_rx_data* rdata = build_rxdata(msg, tp, rdata_pool);
-  set_trail(rdata, SAS::new_trail());
+  set_trail(rdata, 42);
   char buf[100];
   snprintf(buf, sizeof(buf), "inject_msg on %p (transport %p)", tp, tp->_transport);
   log_pjsip_buf(buf, rdata->pkt_info.packet, rdata->pkt_info.len);
@@ -492,6 +506,26 @@ pjsip_msg* SipTest::parse_msg(const std::string& msg)
 
 pj_status_t SipTest::on_tx_msg(pjsip_tx_data* tdata)
 {
+  SAS::TrailId trail = 42;
+
+  printf("Logging message to SAS!");
+  PJUtils::report_sas_to_from_markers(trail, tdata->msg);
+
+  PJUtils::mark_sas_call_branch_ids(trail, NULL, tdata->msg);
+
+  // Log the message event.
+  SAS::Event event(trail, SASEvent::TX_SIP_MSG, 0);
+  event.add_static_param(pjsip_transport_get_type_from_flag(tdata->tp_info.transport->flag));
+  event.add_static_param(tdata->tp_info.dst_port);
+  event.add_var_param(tdata->tp_info.dst_name);
+  event.add_compressed_param((int)(tdata->buf.cur - tdata->buf.start),
+                             tdata->buf.start,
+                             &SASEvent::PROFILE_SIP);
+  SAS::report_event(event);
+
+  SAS::Marker end_marker(trail, MARKER_ID_END, 1u);
+  SAS::report_marker(end_marker);
+
   _current_instance->handle_txdata(tdata);
   return PJ_SUCCESS;
 }
