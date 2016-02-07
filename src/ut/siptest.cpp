@@ -374,7 +374,18 @@ void SipTest::inject_msg(const string& msg, TransportFlow* tp)
                                                   PJSIP_POOL_RDATA_LEN,
                                                   PJSIP_POOL_RDATA_INC);
   pjsip_rx_data* rdata = build_rxdata(msg, tp, rdata_pool);
-  set_trail(rdata, 42);
+ 
+  // Log the message event.
+  SAS::Event event(1042, SASEvent::RX_SIP_MSG, 0);
+  event.add_static_param(0);
+  event.add_static_param(tp->local_port());
+  event.add_var_param(tp->to_string(false));
+  event.add_compressed_param(msg,
+                             &SASEvent::PROFILE_SIP);
+  SAS::report_event(event);
+
+
+  set_trail(rdata, 1042);
   char buf[100];
   snprintf(buf, sizeof(buf), "inject_msg on %p (transport %p)", tp, tp->_transport);
   log_pjsip_buf(buf, rdata->pkt_info.packet, rdata->pkt_info.len);
@@ -389,6 +400,18 @@ void SipTest::inject_msg(pjsip_msg* msg, TransportFlow* tp)
 {
   char buf[16384];
   pj_ssize_t len = pjsip_msg_print(msg, buf, sizeof(buf));
+
+  // Log the message event.
+  SAS::Event event(1042, SASEvent::RX_SIP_MSG, 0);
+  event.add_static_param(0);
+  event.add_static_param(tp->local_port());
+  event.add_var_param(tp->to_string(false));
+  event.add_compressed_param(len,
+                             buf,
+                             &SASEvent::PROFILE_SIP);
+  SAS::report_event(event);
+
+
   inject_msg(string(buf, len), tp);
 }
 
@@ -519,20 +542,26 @@ pjsip_msg* SipTest::parse_msg(const std::string& msg)
 
 pj_status_t SipTest::on_tx_msg(pjsip_tx_data* tdata)
 {
-  SAS::TrailId trail = 42;
+  SAS::TrailId trail = 1042;
 
-  printf("Logging message to SAS!");
+  char buf[128];
+  auto t = time(NULL);
+  strftime(buf, 128, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+  printf("Logging message to SAS! Search for it by searching for trail ID 1042 (decimal) and timestamp %s at https://sas.cw-ngv.com/serviceassurance/search/assert\n", buf);
   PJUtils::report_sas_to_from_markers(trail, tdata->msg);
 
   PJUtils::mark_sas_call_branch_ids(trail, NULL, tdata->msg);
+
+  char buf2[4096];
+  pj_ssize_t len = pjsip_msg_print(tdata->msg, buf2, 4096);
 
   // Log the message event.
   SAS::Event event(trail, SASEvent::TX_SIP_MSG, 0);
   event.add_static_param(pjsip_transport_get_type_from_flag(tdata->tp_info.transport->flag));
   event.add_static_param(tdata->tp_info.dst_port);
   event.add_var_param(tdata->tp_info.dst_name);
-  event.add_compressed_param((int)(tdata->buf.cur - tdata->buf.start),
-                             tdata->buf.start,
+  event.add_compressed_param(len,
+                             buf2,
                              &SASEvent::PROFILE_SIP);
   SAS::report_event(event);
 
