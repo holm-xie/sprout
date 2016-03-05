@@ -141,6 +141,10 @@ get_settings()
         then
           echo "servers=" > /etc/clearwater/remote_cluster_settings
         fi
+
+        # Create FIFO file for changing logging level
+        mkdir -p /var/run/clearwater/logging
+        mkfifo /var/run/clearwater/logging/sprout
 }
 
 #

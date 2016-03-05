@@ -1458,6 +1458,7 @@ int main(int argc, char* argv[])
   }
 
   Log::setLoggingLevel(opt.log_level);
+  Log::start_watching_for_log_level_changes("/var/run/clearwater/logging/sprout");
   init_pjsip_logging(opt.log_level, opt.log_to_file, opt.log_directory);
 
   if ((opt.log_to_file) && (opt.log_directory != ""))
